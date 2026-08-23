@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace Derafu\Cache;
 
+use Derafu\Cache\Contract\CacheKeyInterface;
+
 /**
  * Builds a PSR-6/PSR-16-safe cache key from a prefix plus arbitrary
  * context — a class name, a set of filters, anything.
@@ -29,8 +31,12 @@ namespace Derafu\Cache;
  * A service, not a static utility, for the same reason as `Memoizer`:
  * every other collaborator in this ecosystem is instantiated and
  * injected, not called statically.
+ *
+ * Implements `CacheKeyInterface` so a consumer that needs different,
+ * object-aware key logic can inject its own implementation instead of
+ * subclassing this one (see that interface's docblock for why).
  */
-class CacheKey
+class CacheKey implements CacheKeyInterface
 {
     /**
      * Memcached's real limit (250 bytes) — short enough to be a safe
