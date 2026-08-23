@@ -1,0 +1,56 @@
+{
+    "name": "derafu/cache",
+    "description": "Derafu: Cache - Consistent PSR-6/PSR-16 Cache Wiring Across Derafu Packages",
+    "type": "library",
+    "homepage": "https://www.derafu.dev/docs/core/cache",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Esteban De La Fuente Rubio / Derafu",
+            "homepage": "https://www.derafu.dev"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/derafu/cache/issues",
+        "source": "https://github.com/derafu/cache"
+    },
+    "autoload": {
+        "psr-4": {
+            "Derafu\\Cache\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Derafu\\TestsCache\\": "tests/src/"
+        }
+    },
+    "require": {
+        "php": "^8.5",
+        "psr/cache": "^3.0",
+        "psr/simple-cache": "^3.0",
+        "symfony/cache": "^8.1",
+        "symfony/filesystem": "^8.1"
+    },
+    "require-dev": {
+        "ext-xdebug": "*",
+        "friendsofphp/php-cs-fixer": "^3.95",
+        "phpstan/phpstan": "^2.2",
+        "phpunit/phpunit": "^13.3",
+        "symfony/console": "^8.1"
+    },
+    "suggest": {
+        "ext-apcu": "To use LocalCacheBackend::Apcu — entirely optional, everything else works without it.",
+        "symfony/console": "To use the bundled derafu:local-cache:clear/derafu:local-cache:stats commands — entirely optional, the rest of the package works without it."
+    },
+    "scripts": {
+        "docs": "php tools/phpdocumentor run --config=phpdoc.xml",
+        "tests": "XDEBUG_MODE=coverage vendor/bin/phpunit --configuration=phpunit.xml",
+        "phpcs-fix": "vendor/bin/php-cs-fixer fix -v --config=php-cs-fixer.php",
+        "phpcs": "vendor/bin/php-cs-fixer fix -v --dry-run --diff --config=php-cs-fixer.php",
+        "phpstan": "vendor/bin/phpstan analyse --configuration=phpstan.neon --memory-limit=1G",
+        "phpstan-export": "vendor/bin/phpstan analyse --configuration=phpstan.neon --level 9 --generate-baseline",
+        "build": "npm run build"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
