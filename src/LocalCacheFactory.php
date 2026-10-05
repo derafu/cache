@@ -15,7 +15,7 @@ namespace Derafu\Cache;
 use Derafu\Cache\Adapter\FilesystemCache;
 use Derafu\Cache\Adapter\PhpFilesCache;
 use Derafu\Cache\Enum\LocalCacheBackend;
-use InvalidArgumentException;
+use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
@@ -92,10 +92,10 @@ final class LocalCacheFactory
         );
 
         if ($needsDirectory && $directory === null) {
-            throw new InvalidArgumentException(sprintf(
-                'A directory is required for the "%s" cache backend.',
-                $backend->value,
-            ));
+            throw new InvalidArgumentException([
+                'A directory is required for the "{backend}" cache backend.',
+                'backend' => $backend->value,
+            ]);
         }
 
         return match ($backend) {

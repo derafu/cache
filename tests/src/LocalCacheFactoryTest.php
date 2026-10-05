@@ -16,6 +16,7 @@ use Derafu\Cache\Adapter\FilesystemCache;
 use Derafu\Cache\Adapter\PhpFilesCache;
 use Derafu\Cache\Enum\LocalCacheBackend;
 use Derafu\Cache\LocalCacheFactory;
+use Derafu\Translation\Contract\TranslatableInterface;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -28,6 +29,7 @@ use Symfony\Component\Cache\Adapter\ChainAdapter;
 use Symfony\Component\Cache\Adapter\NullAdapter;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Throwable;
 
 #[CoversClass(LocalCacheFactory::class)]
 #[UsesClass(PhpFilesCache::class)]
@@ -64,9 +66,12 @@ class LocalCacheFactoryTest extends TestCase
 
     public function testApcuBackendNeedsNoDirectory(): void
     {
-        if (!ApcuAdapter::isSupported()) {
-            $this->markTestSkipped('The apcu extension is not enabled.');
-        }
+        // The tests need APCu (`ext-apcu` in `require-dev`): without it this
+        // fails, it is not skipped.
+        $this->assertTrue(
+            ApcuAdapter::isSupported(),
+            'The apcu extension must be enabled to test this backend.'
+        );
 
         $pool = LocalCacheFactory::pool(LocalCacheBackend::Apcu, 'test');
 
@@ -105,6 +110,19 @@ class LocalCacheFactoryTest extends TestCase
         );
 
         LocalCacheFactory::pool(LocalCacheBackend::PhpFiles, 'test');
+    }
+
+    public function testAMissingDirectoryIsATranslatableError(): void
+    {
+        $exception = null;
+        try {
+            LocalCacheFactory::pool(LocalCacheBackend::Filesystem, 'test');
+        } catch (Throwable $e) {
+            $exception = $e;
+        }
+
+        $this->assertInstanceOf(InvalidArgumentException::class, $exception);
+        $this->assertInstanceOf(TranslatableInterface::class, $exception);
     }
 
     public function testSimpleReturnsAPsr16CacheWrappingTheSamePool(): void

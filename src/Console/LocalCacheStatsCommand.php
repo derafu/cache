@@ -39,6 +39,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * Not registered into any application automatically — see
  * `ClearLocalCacheCommand`'s docblock, the same note applies here.
+ *
+ * The text of the command (its description, the help of its argument and the
+ * output) is in English, like the one of the commands of Symfony: it is a
+ * technical tool for whoever administers the application, and it is not
+ * translated.
  */
 #[AsCommand(
     name: 'derafu:local-cache:stats',

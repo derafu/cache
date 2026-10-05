@@ -29,18 +29,22 @@
         "psr/cache": "^3.0",
         "psr/simple-cache": "^3.0",
         "symfony/cache": "^8.1",
-        "symfony/filesystem": "^8.1"
+        "symfony/filesystem": "^8.1",
+        "derafu/translation": "dev-main"
     },
     "require-dev": {
+        "ext-apcu": "*",
         "ext-xdebug": "*",
         "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/phpstan": "^2.2",
-        "phpunit/phpunit": "^13.3",
-        "symfony/console": "^8.1"
+        "phpunit/phpunit": "^13.4",
+        "symfony/console": "^8.1",
+        "nikic/php-parser": "^5.9"
     },
     "suggest": {
         "ext-apcu": "To use LocalCacheBackend::Apcu — entirely optional, everything else works without it.",
-        "symfony/console": "To use the bundled derafu:local-cache:clear/derafu:local-cache:stats commands — entirely optional, the rest of the package works without it."
+        "symfony/console": "To use the bundled derafu:local-cache:clear/derafu:local-cache:stats commands — entirely optional, the rest of the package works without it.",
+        "nikic/php-parser": "Required by the tests of the messages of the package (Derafu\\Translation\\Lint reads the code)."
     },
     "scripts": {
         "docs": "php tools/phpdocumentor run --config=phpdoc.xml",

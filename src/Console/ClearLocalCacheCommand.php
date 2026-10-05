@@ -46,6 +46,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * registration) if you want it — `$app->add(new ClearLocalCacheCommand())`.
  * Requires `symfony/console`, which this package only suggests, not
  * requires — nothing else in `derafu/cache` needs it.
+ *
+ * The text of the command (its description, the help of its argument and the
+ * output) is in English, like the one of the commands of Symfony: it is a
+ * technical tool for whoever administers the application, and it is not
+ * translated.
  */
 #[AsCommand(
     name: 'derafu:local-cache:clear',
