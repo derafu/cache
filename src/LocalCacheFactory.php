@@ -85,13 +85,10 @@ final class LocalCacheFactory
         ?string $directory = null,
         int $defaultLifetime = 3600,
     ): AdapterInterface {
-        $needsDirectory = !in_array(
-            $backend,
-            [LocalCacheBackend::None, LocalCacheBackend::Memory, LocalCacheBackend::Apcu],
-            true,
-        );
-
-        if ($needsDirectory && $directory === null) {
+        if (
+            $directory === null
+            && ($backend === LocalCacheBackend::Filesystem || $backend === LocalCacheBackend::PhpFiles)
+        ) {
             throw new InvalidArgumentException([
                 'A directory is required for the "{backend}" cache backend.',
                 'backend' => $backend->value,

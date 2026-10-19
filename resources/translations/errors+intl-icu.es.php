@@ -13,4 +13,6 @@ declare(strict_types=1);
 return [
     'A directory is required for the "{backend}" cache backend.' =>
         'Se requiere un directorio para el backend de caché "{backend}".',
+    'Could not read metadata for cache file {file}.' =>
+        'No se pudieron leer los metadatos del archivo de caché {file}.',
 ];

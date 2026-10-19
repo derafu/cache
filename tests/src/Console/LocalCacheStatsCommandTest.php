@@ -16,6 +16,7 @@ use Derafu\Cache\Adapter\PhpFilesCache;
 use Derafu\Cache\CacheDirectory;
 use Derafu\Cache\Console\LocalCacheStatsCommand;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
@@ -50,6 +51,30 @@ class LocalCacheStatsCommandTest extends TestCase
 
         $this->assertSame(Command::SUCCESS, $tester->getStatusCode());
         $this->assertMatchesRegularExpression('/\b1\b/', $tester->getDisplay());
+    }
+
+    /** @return array<string, array{int, string}> */
+    public static function fileSizes(): array
+    {
+        return [
+            'below one kilobyte' => [1023, '1023.00 B'],
+            'one kilobyte' => [1024, '1.00 KB'],
+            'fractional kilobytes' => [1536, '1.50 KB'],
+            'one megabyte' => [1048576, '1.00 MB'],
+            'fractional megabytes' => [1572864, '1.50 MB'],
+        ];
+    }
+
+    #[DataProvider('fileSizes')]
+    public function testFormatsTheSizeOfRealFiles(int $size, string $expected): void
+    {
+        mkdir($this->directory);
+        $this->assertSame($size, file_put_contents($this->directory . '/entry', str_repeat('x', $size)));
+        $tester = new CommandTester(new LocalCacheStatsCommand());
+        $tester->execute(['path' => $this->directory]);
+
+        $this->assertSame(Command::SUCCESS, $tester->getStatusCode());
+        $this->assertStringContainsString($expected, $tester->getDisplay());
     }
 
     public function testShowsZerosForAnEmptyOrMissingDirectory(): void

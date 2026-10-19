@@ -168,6 +168,7 @@ class MemoizerTest extends TestCase
                 };
             }
 
+            /** @return iterable<CacheItemInterface> */
             public function getItems(array $keys = []): iterable
             {
                 return array_map($this->getItem(...), $keys);

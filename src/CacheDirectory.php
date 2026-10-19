@@ -12,9 +12,12 @@ declare(strict_types=1);
 
 namespace Derafu\Cache;
 
+use Derafu\Translation\Exception\Core\TranslatableRuntimeException;
 use FilesystemIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use RuntimeException;
+use SplFileInfo;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
@@ -52,10 +55,29 @@ final class CacheDirectory
         $newest = null;
 
         foreach ($this->files() as $file) {
-            $count++;
-            $totalSize += $file->getSize();
+            try {
+                clearstatcache(true, $file->getPathname());
+                $size = $file->getSize();
+                clearstatcache(true, $file->getPathname());
+                $mtime = $file->getMTime();
+                if ($size === false || $mtime === false) {
+                    throw new TranslatableRuntimeException([
+                        'Could not read metadata for cache file {file}.',
+                        'file' => $file->getPathname(),
+                    ]);
+                }
+            } catch (RuntimeException $exception) {
+                $path = $file->getPathname();
+                clearstatcache(true, $path);
+                if (!file_exists($path)) {
+                    continue;
+                }
 
-            $mtime = $file->getMTime();
+                throw $exception;
+            }
+
+            $count++;
+            $totalSize += $size;
             $oldest = $oldest === null ? $mtime : min($oldest, $mtime);
             $newest = $newest === null ? $mtime : max($newest, $mtime);
         }
@@ -84,7 +106,7 @@ final class CacheDirectory
     }
 
     /**
-     * @return iterable<\SplFileInfo>
+     * @return iterable<SplFileInfo>
      */
     private function files(): iterable
     {
@@ -96,6 +118,7 @@ final class CacheDirectory
             new RecursiveDirectoryIterator($this->path, FilesystemIterator::SKIP_DOTS)
         );
 
+        /** @var SplFileInfo $file */
         foreach ($iterator as $file) {
             if ($file->isFile()) {
                 yield $file;

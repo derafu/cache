@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Derafu\TestsCache;
 
+use Closure;
 use Derafu\Cache\CacheWarmer;
 use Derafu\Cache\Contract\WarmableInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -74,11 +75,11 @@ class CacheWarmerTest extends TestCase
         $this->assertSame($exception, $failures[0]['exception']);
     }
 
-    private function createWarmable(callable $onWarmup): WarmableInterface
+    private function createWarmable(Closure $onWarmup): WarmableInterface
     {
         return new class ($onWarmup) implements WarmableInterface {
             public function __construct(
-                private readonly \Closure $onWarmup,
+                private readonly Closure $onWarmup,
             ) {
             }
 
