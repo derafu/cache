@@ -39,7 +39,9 @@
         "phpstan/phpstan": "^2.3",
         "phpunit/phpunit": "^13.4",
         "symfony/console": "^8.1",
-        "nikic/php-parser": "^5.9"
+        "nikic/php-parser": "^5.9",
+        "symfony/dependency-injection": "^8.1",
+        "symfony/config": "^8.1"
     },
     "suggest": {
         "ext-apcu": "To use LocalCacheBackend::Apcu — entirely optional, everything else works without it.",
