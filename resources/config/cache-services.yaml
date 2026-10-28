@@ -3,6 +3,12 @@
 #
 #   imports:
 #       - { resource: '../vendor/derafu/cache/resources/config/cache-services.yaml' }
+#
+# Registers key generation without selecting or replacing an application cache
+# pool. Consumers configure their own PSR-6 or PSR-16 backend and lifetime.
+
+parameters:
+    derafu.cache.key.max_length: 250
 
 services:
 
@@ -10,6 +16,11 @@ services:
         autowire: true
         autoconfigure: true
         public: false
+
+    Derafu\Cache\Contract\CacheKeyInterface:
+        class: Derafu\Cache\CacheKey
+        arguments:
+            $maxLength: '%derafu.cache.key.max_length%'
 
     # Feeds resources/translations into the consuming app's Translator (the
     # app must pass $resourceProviders: !tagged_iterator

@@ -12,30 +12,35 @@ declare(strict_types=1);
 
 namespace Derafu\TestsCache;
 
+use Derafu\Cache\Contract\CacheKeyInterface;
 use Derafu\Cache\Enum\LocalCacheBackend;
 use Derafu\Cache\LocalCacheFactory;
 use Derafu\Cache\Translation\CacheTranslationResourceProvider;
 use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException;
-use Derafu\Translation\TranslatorFactory;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+use Psr\Cache\CacheItemPoolInterface;
+use Psr\SimpleCache\CacheInterface;
 use Symfony\Component\Config\FileLocator;
-use Symfony\Component\DependencyInjection\Argument\TaggedIteratorArgument;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\Translation\Translator;
 
 /**
- * Import the provider-only YAML and consume its tagged translation resources.
+ * Exercises the production key service with consumer-defined pools and configuration.
  */
 #[CoversNothing]
 final class ServicesTest extends TestCase
 {
-    private function load(): ContainerBuilder
+    private function load(?string $fixture = null): ContainerBuilder
     {
         $container = new ContainerBuilder();
-        (new YamlFileLoader($container, new FileLocator(dirname(__DIR__, 2) . '/resources/config')))
-            ->load('cache-services.yaml');
+        $root = dirname(__DIR__, 2);
+        (new YamlFileLoader($container, new FileLocator([
+            $root . '/resources/config',
+            $root . '/tests/fixtures/config',
+        ])))
+            ->load($fixture ?? 'cache-services.yaml');
 
         return $container;
     }
@@ -54,20 +59,17 @@ final class ServicesTest extends TestCase
 
     public function testTaggedResourcesTranslateARealCacheConfigurationException(): void
     {
-        $container = $this->load();
+        $container = $this->load('translation.yaml');
         $this->assertArrayHasKey(
             CacheTranslationResourceProvider::class,
             $container->findTaggedServiceIds('derafu_translation.resource_provider')
         );
-        $container->register('app.translator', Translator::class)
-            ->setFactory([TranslatorFactory::class, 'create'])
-            ->setArguments(['es', ['en'], new TaggedIteratorArgument('derafu_translation.resource_provider')])
-            ->setPublic(true);
+        $container->getDefinition('app.translator')->setPublic(true);
         $container->compile();
         $translator = $container->get('app.translator');
         $this->assertInstanceOf(Translator::class, $translator);
 
-        // The YAML supplies translations; cache pools are created by consumers.
+        // The application chooses its pool independently of the key service.
         try {
             LocalCacheFactory::pool(LocalCacheBackend::Filesystem, 'services-test');
             $this->fail('A filesystem cache without a directory was accepted.');
@@ -75,5 +77,63 @@ final class ServicesTest extends TestCase
             $this->assertSame('A directory is required for the "filesystem" cache backend.', $exception->getMessage());
             $this->assertSame('Se requiere un directorio para el backend de caché "filesystem".', $exception->trans($translator));
         }
+    }
+
+    public function testBaseConfigurationProvidesKeysWithoutChoosingAPool(): void
+    {
+        $container = $this->load();
+        $container->getDefinition(CacheKeyInterface::class)->setPublic(true);
+        $container->compile();
+        $keys = $container->get(CacheKeyInterface::class);
+        $this->assertInstanceOf(CacheKeyInterface::class, $keys);
+        $this->assertSame('document.App.Entity.Invoice', $keys->build('document', 'App\\Entity\\Invoice'));
+        $this->assertFalse($container->has(CacheItemPoolInterface::class));
+        $this->assertFalse($container->has(CacheInterface::class));
+    }
+
+    public function testConfiguredKeysCanStoreAndRetrieveValuesInAConsumerPool(): void
+    {
+        $container = $this->load('consumer.yaml');
+        $container->getDefinition(CacheKeyInterface::class)->setPublic(true);
+        $container->getDefinition(CacheItemPoolInterface::class)->setPublic(true);
+        $container->compile();
+        $keys = $container->get(CacheKeyInterface::class);
+        $this->assertInstanceOf(CacheKeyInterface::class, $keys);
+        $pool = $container->get(CacheItemPoolInterface::class);
+        $this->assertInstanceOf(CacheItemPoolInterface::class, $pool);
+
+        $key = $keys->build('document', 'App\\Entity\\Invoice', ['status' => 'paid']);
+        $item = $pool->getItem($key);
+        $this->assertFalse($item->isHit());
+        $this->assertTrue($pool->save($item->set(['total' => 100])));
+        $stored = $pool->getItem($keys->build('document', 'App\\Entity\\Invoice', ['status' => 'paid']));
+        $this->assertTrue($stored->isHit());
+        $this->assertSame(['total' => 100], $stored->get());
+        $this->assertFalse($pool->getItem($keys->build('document', 'App\\Entity\\Invoice', ['status' => 'draft']))->isHit());
+    }
+
+    public function testApplicationLengthOverrideReachesTheKeyService(): void
+    {
+        $defaultContainer = $this->load();
+        $defaultContainer->getDefinition(CacheKeyInterface::class)->setPublic(true);
+        $defaultContainer->compile();
+        $defaultKeys = $defaultContainer->get(CacheKeyInterface::class);
+        $this->assertInstanceOf(CacheKeyInterface::class, $defaultKeys);
+        $part = str_repeat('x', 90);
+        $this->assertSame('document.' . $part, $defaultKeys->build('document', $part));
+
+        $container = $this->load('short-keys.yaml');
+        $container->getDefinition(CacheKeyInterface::class)->setPublic(true);
+        $container->getDefinition(CacheItemPoolInterface::class)->setPublic(true);
+        $container->compile();
+        $keys = $container->get(CacheKeyInterface::class);
+        $this->assertInstanceOf(CacheKeyInterface::class, $keys);
+        $pool = $container->get(CacheItemPoolInterface::class);
+        $this->assertInstanceOf(CacheItemPoolInterface::class, $pool);
+        $key = $keys->build('document', $part);
+        $this->assertSame('document.' . md5('document.' . $part), $key);
+        $this->assertLessThanOrEqual(64, strlen($key));
+        $this->assertTrue($pool->save($pool->getItem($key)->set('cached')));
+        $this->assertSame('cached', $pool->getItem($keys->build('document', $part))->get());
     }
 }

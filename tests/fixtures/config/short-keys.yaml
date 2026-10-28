@@ -1,0 +1,5 @@
+imports:
+    - { resource: consumer.yaml }
+
+parameters:
+    derafu.cache.key.max_length: 64
